@@ -1,0 +1,56 @@
+# Build artifacts
+target/
+*.jar
+*.war
+*.ear
+*.class
+
+# Maven
+.mvn/
+mvnw
+mvnw.cmd
+!.mvn/wrapper/maven-wrapper.jar
+dependency-reduced-pom.xml
+
+# IDE files
+.vscode/
+.idea/
+*.iws
+*.ipr
+*.iml
+.classpath
+.project
+.c9/
+*.launch
+.settings/
+.factorypath
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Diskimages2
+.fseventsd
+.SymLinkChain
+
+# Logs
+*.log
+logs/
+
+# Data files
+data/
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*~
+
+# External tools
+.gradle
+build/
+!src/
+
+# Environment
+.env

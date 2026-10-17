@@ -30,6 +30,7 @@ The **Marks Administration System** is a secure academic tool that allows lectur
 ### Advanced Features
 - **Multithreading** — Background processing for CSV import/export.
 - **Object Serialization** — Persist user session and mark data.
+- **SQLite Database Persistence** — Embedded relational storage for users, students, subjects, and marks.
 - **Recursion** — Directory traversal for batch CSV processing.
 - **Generics & Collections** — Type-safe data structures.
 - **Streams API** — Data filtering and aggregation.
@@ -57,6 +58,8 @@ mvn exec:java -Dexec.mainClass="com.group21.marksystem.cli.CLIMain"
 mvn exec:java -Dexec.mainClass="com.group21.marksystem.gui.GUIMain"
 ```
 
+On first run, the app creates `/home/runner/work/group21-marks-administration-system/group21-marks-administration-system/data/marks_system.db` automatically and persists data there on exit.
+
 ---
 
 ## Project Structure
@@ -82,7 +85,36 @@ src/
 
 | Name | Student ID | Role |
 |------|-----------|------|
-| *(Add team members here)* | | |
+| CHAGEDI BOPAKI MONTJANE | N/A | Student |
+| HUSSEIN AKIM | N/A | Student |
+| LUCAS MFULWANE | N/A | Student |
+| MILLANO ZAVIER REDCLIFFE | N/A | Student |
+| NHLONIPHO NZUZO SISHI | N/A | Student |
+| PHAKAMILE TSHENYEGO | N/A | Student |
+| SIBONGAKONKE MTHETHWA | N/A | Student |
+| SINAZO BEATRICE RADANA | N/A | Student |
+
+## Team Roles & Responsibilities
+
+| Job Category | Assigned Members | Primary Code & Component Responsibilities |
+|--------------|------------------|-------------------------------------------|
+| 1. Database & Domain Architecture | Nhlonipho Sishi, Scelo Mthethwa | Database setup (`schema.sql`, `db/Database.java`) and core domain models (`User`, `Role`, `Student`, `Module`, `Assessment`). |
+| 2. Security & Business Logic | Lucas Mfulwane, Millano Redcliffe | Security and authentication (`util/PasswordUtil.java`, `service/AuthService.java`) alongside mark processing, missing mark flags, and weight validations (`service/MarksService.java`). |
+| 3. File Processing & CSV Engine | Bopaki Montjane, Phakamile Tshenyego | File parsing, batch CSV mark imports, error logging, and export functionality (`service/CsvService.java`, `service/ImportResult.java`). |
+| 4. User Interface & Quality Assurance | Hussein Akim, Sinazo Radana | Graphical UI (`gui/GuiApp.java`), terminal CLI testing interface (`CliApp.java`, `Main.java`), test cases, and final documentation. |
+
+## 4. Milestones & Project Timeline
+
+| Task / Milestone | Week 1 | Week 2 | Week 3 | Deliverable |
+|------------------|--------|--------|--------|-------------|
+| System Architecture & Model Classes (`User`, `Module`, etc.) | [XX] | Design Doc & Models |  | Design Doc & Models |
+| MySQL Schema (`schema.sql`) & Database Handler (`Database`) | [XX] | Running MySQL DB |  | Running MySQL DB |
+| Auth Engine (`AuthService.java`, `PasswordUtil.java`) | [XX] | Secure Login Service |  | Secure Login Service |
+| Marks Engine & Weight Validations (`MarksService.java`) | [XX] | Calculation Service |  | Calculation Service |
+| CSV Parsing, Imports & Exports (`CsvService.java`) | [XX] | CSV & ImportResult |  | CSV & ImportResult |
+| Swing Graphical Interface (`GuiApp.java`) |  | [XX] | GUI Dashboards | GUI Dashboards |
+| Fallback CLI Menu & Unit Testing (`CliApp.java`, `Main`) |  | [XX] | Working CLI & Test Suite | Working CLI & Test Suite |
+| Design Report, GA Reflections & Presentation Prep |  |  | [XX] | Final Zipped Submission |
 
 ---
 

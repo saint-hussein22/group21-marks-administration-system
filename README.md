@@ -103,6 +103,19 @@ src/
 | 3. File Processing & CSV Engine | Bopaki Montjane, Phakamile Tshenyego | File parsing, batch CSV mark imports, error logging, and export functionality (`service/CsvService.java`, `service/ImportResult.java`). |
 | 4. User Interface & Quality Assurance | Hussein Akim, Sinazo Radana | Graphical UI (`gui/GuiApp.java`), terminal CLI testing interface (`CliApp.java`, `Main.java`), test cases, and final documentation. |
 
+## 4. Milestones & Project Timeline
+
+| Task / Milestone | Week 1 | Week 2 | Week 3 | Deliverable |
+|------------------|--------|--------|--------|-------------|
+| System Architecture & Model Classes (`User`, `Module`, etc.) | [XX] | Design Doc & Models |  | Design Doc & Models |
+| MySQL Schema (`schema.sql`) & Database Handler (`Database`) | [XX] | Running MySQL DB |  | Running MySQL DB |
+| Auth Engine (`AuthService.java`, `PasswordUtil.java`) | [XX] | Secure Login Service |  | Secure Login Service |
+| Marks Engine & Weight Validations (`MarksService.java`) | [XX] | Calculation Service |  | Calculation Service |
+| CSV Parsing, Imports & Exports (`CsvService.java`) | [XX] | CSV & ImportResult |  | CSV & ImportResult |
+| Swing Graphical Interface (`GuiApp.java`) |  | [XX] | GUI Dashboards | GUI Dashboards |
+| Fallback CLI Menu & Unit Testing (`CliApp.java`, `Main`) |  | [XX] | Working CLI & Test Suite | Working CLI & Test Suite |
+| Design Report, GA Reflections & Presentation Prep |  |  | [XX] | Final Zipped Submission |
+
 ---
 
 ## Deliverables

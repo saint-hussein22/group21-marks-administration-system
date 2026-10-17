@@ -107,6 +107,33 @@ public class UserService {
     }
 
     /**
+     * Clears all users from memory.
+     */
+    public void clearUsers() {
+        lock.writeLock().lock();
+        try {
+            users.clear();
+            currentUser = null;
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    /**
+     * Adds a user that already contains a persisted password hash.
+     *
+     * @param user user loaded from persistent storage.
+     */
+    public void addUserFromStorage(User user) {
+        lock.writeLock().lock();
+        try {
+            users.put(user.getUsername(), user);
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    /**
      * Updates a user's details.
      *
      * @param username   The username of the user to update.

@@ -5,6 +5,7 @@ import com.group21.marksystem.models.Student;
 import com.group21.marksystem.models.Subject;
 import com.group21.marksystem.models.User;
 import com.group21.marksystem.services.CSVService;
+import com.group21.marksystem.services.DatabaseService;
 import com.group21.marksystem.services.MarkService;
 import com.group21.marksystem.services.ReportService;
 import com.group21.marksystem.services.UserService;
@@ -30,6 +31,7 @@ public class CLIMain {
     private UserService userService;
     private ReportService reportService;
     private CSVService csvService;
+    private DatabaseService databaseService;
 
     public CLIMain() {
         this.scanner = new Scanner(System.in);
@@ -37,10 +39,12 @@ public class CLIMain {
         this.userService = new UserService();
         this.reportService = new ReportService(markService, userService);
         this.csvService = new CSVService(markService);
+        this.databaseService = new DatabaseService("data/marks_system.db");
 
         // Initialize with sample data
         markService.initializeSampleData();
         userService.initializeDefaultUsers();
+        loadDataFromDatabase();
     }
 
     /**
@@ -738,6 +742,14 @@ public class CLIMain {
 
     private void saveData() {
         try {
+            databaseService.initialize();
+            databaseService.saveAll(markService, userService);
+            System.out.println("✓ SQLite database data saved.");
+        } catch (Exception e) {
+            System.err.println("⚠  Warning: Could not save to SQLite database: " + e.getMessage());
+        }
+
+        try {
             String dataDir = "data";
             Files.createDirectories(Paths.get(dataDir));
 
@@ -755,6 +767,20 @@ public class CLIMain {
             System.out.println("✓ User data saved.");
         } catch (IOException e) {
             System.err.println("⚠  Warning: Could not save user data: " + e.getMessage());
+        }
+    }
+
+    private void loadDataFromDatabase() {
+        try {
+            databaseService.initialize();
+            boolean loaded = databaseService.loadAll(markService, userService);
+            if (loaded) {
+                System.out.println("✓ Loaded persisted data from SQLite database.");
+            } else {
+                System.out.println("ℹ No existing database data found. Using default sample data.");
+            }
+        } catch (Exception e) {
+            System.err.println("⚠  Warning: Could not load SQLite database data: " + e.getMessage());
         }
     }
 }

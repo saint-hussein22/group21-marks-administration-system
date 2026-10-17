@@ -227,6 +227,19 @@ public class MarkService {
         }
     }
 
+    /**
+     * Clears all students and subjects from memory.
+     */
+    public void clearAllData() {
+        lock.writeLock().lock();
+        try {
+            students.clear();
+            subjects.clear();
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
     // ========== Mark Management ==========
 
     /**

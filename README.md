@@ -30,6 +30,7 @@ The **Marks Administration System** is a secure academic tool that allows lectur
 ### Advanced Features
 - **Multithreading** — Background processing for CSV import/export.
 - **Object Serialization** — Persist user session and mark data.
+- **SQLite Database Persistence** — Embedded relational storage for users, students, subjects, and marks.
 - **Recursion** — Directory traversal for batch CSV processing.
 - **Generics & Collections** — Type-safe data structures.
 - **Streams API** — Data filtering and aggregation.
@@ -56,6 +57,8 @@ mvn exec:java -Dexec.mainClass="com.group21.marksystem.cli.CLIMain"
 # Run the GUI interface
 mvn exec:java -Dexec.mainClass="com.group21.marksystem.gui.GUIMain"
 ```
+
+On first run, the app creates `/home/runner/work/group21-marks-administration-system/group21-marks-administration-system/data/marks_system.db` automatically and persists data there on exit.
 
 ---
 

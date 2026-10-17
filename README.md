@@ -94,18 +94,14 @@ src/
 | SIBONGAKONKE MTHETHWA | N/A | Student |
 | SINAZO BEATRICE RADANA | N/A | Student |
 
-## Work Division (Equal Contribution)
+## Team Roles & Responsibilities
 
-| Member | Assigned Area | Contribution Focus |
-|--------|---------------|--------------------|
-| CHAGEDI BOPAKI MONTJANE | Project setup & build | Maven setup, project structure, run configuration |
-| HUSSEIN AKIM | User authentication & roles | Login flow, role checks (Lecturer/HoD), user management support |
-| LUCAS MFULWANE | Student management | Add/edit/delete/search student features in CLI/services |
-| MILLANO ZAVIER REDCLIFFE | Subject management | Subject creation, assessment categories, subject listing/details |
-| NHLONIPHO NZUZO SISHI | Marks processing | Mark capture, weighted total calculations, grade logic |
-| PHAKAMILE TSHENYEGO | Reporting & analytics | Student/subject reports, missing marks reporting, activity logs |
-| SIBONGAKONKE MTHETHWA | Data persistence | Serialization, SQLite persistence integration, save/load flow |
-| SINAZO BEATRICE RADANA | CSV import/export & QA | CSV templates/import/export features, test execution, demo validation |
+| Job Category | Assigned Members | Primary Code & Component Responsibilities |
+|--------------|------------------|-------------------------------------------|
+| 1. Database & Domain Architecture | Nhlonipho Sishi, Scelo Mthethwa | Database setup (`schema.sql`, `db/Database.java`) and core domain models (`User`, `Role`, `Student`, `Module`, `Assessment`). |
+| 2. Security & Business Logic | Lucas Mfulwane, Millano Redcliffe | Security and authentication (`util/PasswordUtil.java`, `service/AuthService.java`) alongside mark processing, missing mark flags, and weight validations (`service/MarksService.java`). |
+| 3. File Processing & CSV Engine | Bopaki Montjane, Phakamile Tshenyego | File parsing, batch CSV mark imports, error logging, and export functionality (`service/CsvService.java`, `service/ImportResult.java`). |
+| 4. User Interface & Quality Assurance | Hussein Akim, Sinazo Radana | Graphical UI (`gui/GuiApp.java`), terminal CLI testing interface (`CliApp.java`, `Main.java`), test cases, and final documentation. |
 
 ---
 

@@ -85,7 +85,27 @@ src/
 
 | Name | Student ID | Role |
 |------|-----------|------|
-| *(Add team members here)* | | |
+| CHAGEDI BOPAKI MONTJANE | N/A | Student |
+| HUSSEIN AKIM | N/A | Student |
+| LUCAS MFULWANE | N/A | Student |
+| MILLANO ZAVIER REDCLIFFE | N/A | Student |
+| NHLONIPHO NZUZO SISHI | N/A | Student |
+| PHAKAMILE TSHENYEGO | N/A | Student |
+| SIBONGAKONKE MTHETHWA | N/A | Student |
+| SINAZO BEATRICE RADANA | N/A | Student |
+
+## Work Division (Equal Contribution)
+
+| Member | Assigned Area | Contribution Focus |
+|--------|---------------|--------------------|
+| CHAGEDI BOPAKI MONTJANE | Project setup & build | Maven setup, project structure, run configuration |
+| HUSSEIN AKIM | User authentication & roles | Login flow, role checks (Lecturer/HoD), user management support |
+| LUCAS MFULWANE | Student management | Add/edit/delete/search student features in CLI/services |
+| MILLANO ZAVIER REDCLIFFE | Subject management | Subject creation, assessment categories, subject listing/details |
+| NHLONIPHO NZUZO SISHI | Marks processing | Mark capture, weighted total calculations, grade logic |
+| PHAKAMILE TSHENYEGO | Reporting & analytics | Student/subject reports, missing marks reporting, activity logs |
+| SIBONGAKONKE MTHETHWA | Data persistence | Serialization, SQLite persistence integration, save/load flow |
+| SINAZO BEATRICE RADANA | CSV import/export & QA | CSV templates/import/export features, test execution, demo validation |
 
 ---
 

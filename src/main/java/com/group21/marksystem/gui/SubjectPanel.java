@@ -46,7 +46,7 @@ public class SubjectPanel extends JPanel {
         addBtn.addActionListener(e -> addSubject());
         editBtn.addActionListener(e -> editSubject());
         deleteBtn.addActionListener(e -> deleteSubject());
-        refreshBtn.addActionListener(e -> refreshTable());
+        refreshBtn.addActionListener(e -> refreshData());
 
         buttonPanel.add(addBtn);
         buttonPanel.add(editBtn);
@@ -54,6 +54,13 @@ public class SubjectPanel extends JPanel {
         buttonPanel.add(refreshBtn);
 
         add(buttonPanel, BorderLayout.SOUTH);
+        refreshTable();
+    }
+
+    /**
+     * Reloads the table from the shared service (for example after a CSV import).
+     */
+    public void refreshData() {
         refreshTable();
     }
 
@@ -98,10 +105,15 @@ public class SubjectPanel extends JPanel {
         }
         String code = (String) tableModel.getValueAt(selected, 0);
         int confirm = JOptionPane.showConfirmDialog(this,
-                "Are you sure you want to delete this subject?",
+                "Are you sure you want to delete this subject and its marks?",
                 "Confirm Delete", JOptionPane.YES_NO_OPTION);
         if (confirm == JOptionPane.YES_OPTION) {
-            // Note: MarkService would need a deleteSubject method
+            if (markService.deleteSubject(code)) {
+                reportService.logActivity("Deleted subject: " + code);
+            } else {
+                JOptionPane.showMessageDialog(this, "Subject not found.",
+                        "Delete Failed", JOptionPane.WARNING_MESSAGE);
+            }
             refreshTable();
         }
     }

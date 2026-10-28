@@ -58,27 +58,31 @@ public class Mark implements Serializable {
         calculateTotals();
     }
 
-    // Calculate total and weighted marks
+    /**
+     * Recalculates the raw total, the missing flag and an unweighted average
+     * grade. Subject weights are not known at construction time, so
+     * {@link #calculateWeightedTotal(Map)} (or {@link #alignToCategories(Map)})
+     * must be called before a weighted grade is meaningful.
+     */
     private void calculateTotals() {
         double rawSum = 0;
-        double weightedSum = 0;
-        double totalWeight = 0;
+        int scored = 0;
+        boolean missing = false;
 
-        for (Map.Entry<String, Double> entry : assessmentMarks.entrySet()) {
-            String category = entry.getKey();
-            Double mark = entry.getValue();
-            if (mark != null) {
-                rawSum += mark;
-                // Weighted calculation would require subject weights
-                // This will be set by the service layer
+        for (Double mark : assessmentMarks.values()) {
+            if (mark == null || !Double.isFinite(mark)) {
+                missing = true;
             } else {
-                isMissing = true;
+                rawSum += mark;
+                scored++;
             }
         }
 
         this.totalMark = rawSum;
-        this.weightedTotal = weightedSum;
-        this.letterGrade = determineGrade(rawSum);
+        this.weightedTotal = 0;
+        this.isMissing = missing;
+        // Without weights, grade on the average percentage of the entered marks.
+        this.letterGrade = determineGrade(scored > 0 ? rawSum / scored : 0);
     }
 
     // Determine letter grade from numeric total
@@ -91,24 +95,55 @@ public class Mark implements Serializable {
         return Grade.F;
     }
 
-    // Calculate weighted total using subject's assessment weights
+    /**
+     * Calculates the weighted total as a percentage of the subject's full
+     * weight. A missing or absent assessment counts as zero and flags the mark
+     * as incomplete, so an incomplete record can never be inflated by
+     * normalising only over the assessments that happen to be present.
+     *
+     * @param weights The subject's assessment weights (category -> percentage).
+     */
     public void calculateWeightedTotal(Map<String, Double> weights) {
-        double sum = 0;
+        double earned = 0;
         double totalWeight = 0;
+        boolean missing = false;
 
-        for (Map.Entry<String, Double> entry : assessmentMarks.entrySet()) {
-            String category = entry.getKey();
-            Double mark = entry.getValue();
-            Double weight = weights.get(category);
+        for (Map.Entry<String, Double> entry : weights.entrySet()) {
+            Double weight = entry.getValue();
+            if (weight == null || !Double.isFinite(weight) || weight <= 0) {
+                continue;
+            }
+            totalWeight += weight;
 
-            if (mark != null && weight != null) {
-                sum += mark * (weight / 100.0);
-                totalWeight += weight;
+            Double mark = assessmentMarks.get(entry.getKey());
+            if (mark == null || !Double.isFinite(mark)) {
+                missing = true;
+            } else {
+                earned += mark * (weight / 100.0);
             }
         }
 
-        this.weightedTotal = totalWeight > 0 ? (sum / totalWeight) * 100 : 0;
+        this.weightedTotal = totalWeight > 0 ? (earned / totalWeight) * 100 : 0;
+        this.isMissing = missing;
         this.letterGrade = determineGrade(this.weightedTotal);
+    }
+
+    /**
+     * Rebuilds the assessment map so it contains exactly the subject's current
+     * categories. Scores for retained categories are kept, new categories are
+     * recorded as missing and removed categories are dropped. This keeps marks
+     * consistent when a subject's assessments are edited.
+     *
+     * @param weights The subject's current assessment weights.
+     */
+    public void alignToCategories(Map<String, Double> weights) {
+        Map<String, Double> aligned = new java.util.LinkedHashMap<>();
+        for (String category : weights.keySet()) {
+            aligned.put(category, assessmentMarks.get(category));
+        }
+        this.assessmentMarks = aligned;
+        calculateTotals();
+        calculateWeightedTotal(weights);
     }
 
     public String getStudentId() {
@@ -170,8 +205,7 @@ public class Mark implements Serializable {
 
     @Override
     public String toString() {
-        return String.format("Mark{student=%s, subject=%s, total=%.2f, grade=%s, missing=%s}",
-                studentId, subjectCode, weightedTotal > 0 ? weightedTotal : totalMark,
-                letterGrade, isMissing);
+        return String.format("Mark{student=%s, subject=%s, score=%.2f, grade=%s, missing=%s}",
+                studentId, subjectCode, weightedTotal, letterGrade, isMissing);
     }
 }

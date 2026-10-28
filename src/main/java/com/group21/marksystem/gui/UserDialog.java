@@ -2,7 +2,7 @@ package com.group21.marksystem.gui;
 
 import com.group21.marksystem.models.User;
 import com.group21.marksystem.services.ReportService;
-import com.group21.marksystem.services.UserService;
+import com.group21.marksystem.services.AuthenticationService;
 
 import javax.swing.*;
 import java.awt.*;
@@ -16,12 +16,12 @@ public class UserDialog extends JDialog {
     private JTextField usernameField, fullNameField, deptField;
     private JPasswordField passwordField;
     private JComboBox<User.Role> roleCombo;
-    private UserService userService;
+    private AuthenticationService userService;
     private ReportService reportService;
     private User user;
     private boolean saved = false;
 
-    public UserDialog(User user, UserService userService, ReportService reportService) {
+    public UserDialog(User user, AuthenticationService userService, ReportService reportService) {
         super((Frame) null, user == null ? "Add User" : "Edit User", true);
         this.user = user;
         this.userService = userService;
@@ -106,24 +106,30 @@ public class UserDialog extends JDialog {
             return;
         }
 
-        if (user == null) {
-            // New user - password required
-            if (password.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Password cannot be empty for new users.");
-                return;
+        try {
+            if (user == null) {
+                // New user - password required
+                if (password.isEmpty()) {
+                    JOptionPane.showMessageDialog(this, "Password cannot be empty for new users.");
+                    return;
+                }
+                if (userService.getUser(username) != null) {
+                    JOptionPane.showMessageDialog(this, "Username already exists.");
+                    return;
+                }
+                userService.registerUser(username, password, role, fullName, dept);
+                reportService.logActivity("Added user: " + username);
+            } else {
+                // Update existing user
+                userService.updateUser(username,
+                        password.isEmpty() ? null : password,
+                        role, fullName, dept);
+                reportService.logActivity("Updated user: " + username);
             }
-            if (userService.getUser(username) != null) {
-                JOptionPane.showMessageDialog(this, "Username already exists.");
-                return;
-            }
-            userService.registerUser(username, password, role, fullName, dept);
-            reportService.logActivity("Added user: " + username);
-        } else {
-            // Update existing user
-            userService.updateUser(username,
-                    password.isEmpty() ? null : password,
-                    role, fullName, dept);
-            reportService.logActivity("Updated user: " + username);
+        } catch (IllegalArgumentException e) {
+            JOptionPane.showMessageDialog(this, e.getMessage(),
+                    "Invalid User", JOptionPane.ERROR_MESSAGE);
+            return;
         }
 
         saved = true;

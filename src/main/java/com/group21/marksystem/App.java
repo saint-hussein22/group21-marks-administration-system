@@ -15,10 +15,7 @@ import java.util.Scanner;
 public class App {
 
     public static void main(String[] args) {
-        System.out.println("╔══════════════════════════════════════════════════════════╗");
-        System.out.println("║         Marks Administration System - Group 21           ║");
-        System.out.println("║         SDN260S - Software Design II                        ║");
-        System.out.println("╚══════════════════════════════════════════════════════════╝");
+        printBanner();
         System.out.println();
 
         Scanner scanner = new Scanner(System.in);
@@ -33,7 +30,7 @@ public class App {
         switch (choice) {
             case "1":
                 System.out.println("\nStarting CLI mode...\n");
-                CLIMain cli = new CLIMain();
+                CLIMain cli = new CLIMain(scanner);
                 cli.start();
                 break;
             case "2":
@@ -50,8 +47,29 @@ public class App {
                 break;
             default:
                 System.out.println("Invalid choice. Defaulting to CLI mode.");
-                new CLIMain().start();
+                new CLIMain(scanner).start();
                 break;
         }
+    }
+
+    /**
+     * Prints the startup banner with an aligned box.
+     */
+    private static void printBanner() {
+        String[] lines = {
+                "Marks Administration System - Group 21",
+                "SDN260S - Software Design II"
+        };
+
+        int width = 0;
+        for (String line : lines) {
+            width = Math.max(width, line.length());
+        }
+
+        System.out.println("╔" + "═".repeat(width + 4) + "╗");
+        for (String line : lines) {
+            System.out.println("║  " + line + " ".repeat(width - line.length()) + "  ║");
+        }
+        System.out.println("╚" + "═".repeat(width + 4) + "╝");
     }
 }

@@ -21,7 +21,7 @@ The **Marks Administration System** is a secure academic tool that allows lectur
 - **Subject Management** — Define subjects with credit weights and assessment categories.
 - **Marks Entry** — Enter marks per student per subject with validation.
 - **Automatic Grade Calculation** — Calculate totals, weighted averages, and letter grades.
-- **CSV Import/Export** — Bulk upload/download mark data.
+- **CSV Template & Import/Export** — Download a ready-to-fill marks template, bulk upload marks, and export data that can be edited and re-imported.
 - **Missing Entry Flagging** — Highlight students with incomplete mark submissions.
 - **Summary Reports** — Generate statistical summaries (class average, pass rate, etc.).
 - **Role-Based Access Control** — Secure login with Lecturer and HoD roles.
@@ -29,7 +29,7 @@ The **Marks Administration System** is a secure academic tool that allows lectur
 
 ### Advanced Features
 - **Multithreading** — Background processing for CSV import/export.
-- **Object Serialization** — Persist user session and mark data.
+- **SQLite Database** — One shared database for the CLI and GUI, with immediate persistence of students, subjects, marks, and users.
 - **Recursion** — Directory traversal for batch CSV processing.
 - **Generics & Collections** — Type-safe data structures.
 - **Streams API** — Data filtering and aggregation.
@@ -47,15 +47,55 @@ The **Marks Administration System** is a secure academic tool that allows lectur
 ## Build & Run
 
 ```bash
-# Compile the project
-mvn clean compile
+# Compile and run the tests
+mvn clean test
 
-# Run the CLI interface
-mvn exec:java -Dexec.mainClass="com.group21.marksystem.cli.CLIMain"
+# Build the runnable JAR
+mvn package
 
-# Run the GUI interface
-mvn exec:java -Dexec.mainClass="com.group21.marksystem.gui.GUIMain"
+# Start the application (choose CLI or GUI)
+java -jar target/marks-administration-system-1.0.0.jar
 ```
+
+On first run the application creates `data/marks.db` and seeds it with CPUT Bellville
+engineering programmes, modules and a class list with randomised 9-digit student numbers
+(for example `253243782`). Delete `data/marks.db` to regenerate the demo roster.
+All edits made in the CLI or GUI are written to that database immediately, so both
+interfaces always read the same data.
+
+Use a different database file (for example for a demo):
+
+```bash
+java -Dmarksystem.db=data/demo.db -jar target/marks-administration-system-1.0.0.jar
+```
+
+Default login: `lecturer1` / `pass123` (lecturer) or `hod1` / `admin123` (HoD).
+
+---
+
+## CSV Marks Template
+
+Download the template from **CSV → Download CSV Template...** in the GUI, or
+**CSV Import/Export → 3. Download Marks CSV Template** in the CLI. A copy is also
+available at `templates/CPUT_Marks_Template.csv`.
+
+The template contains one row per student with the class list already filled in:
+
+```
+StudentID,FirstName,LastName,Email,Program,Year,SubjectCode,SubjectName,
+Assessment1,Assessment2,Assessment3,Assessment4,Assessment5
+```
+
+Fill in `Assessment1`, `Assessment2`, ... in the same order as the module's assessment
+categories (shown in the Subjects tab) and import the file. The importer:
+
+- matches columns by header name, so column order can change;
+- creates new students and updates existing students from the file;
+- replaces the marks for each student/module row;
+- reports warnings for unknown subject codes or invalid marks.
+
+The export function writes the same layout, so an exported file can be edited in Excel
+and imported again.
 
 ---
 
@@ -66,8 +106,9 @@ src/
 ├── main/
 │   ├── java/com/group21/marksystem/
 │   │   ├── models/        # Data model classes (Student, Subject, Mark, etc.)
-│   │   ├── services/      # Business logic services
-│   │   ├── utils/         # Utility classes (CSV, hashing, grading)
+│   │   ├── services/      # Business logic services (AuthenticationService)
+│   │   ├── db/            # SQLite database layer (MarkRepository)
+│   │   ├── utils/         # Utility classes (CSV, CPUT seed data, hashing)
 │   │   ├── gui/           # Swing GUI
 │   │   ├── cli/           # Command-line interface
 │   │   └── App.java       # Main entry point
@@ -80,9 +121,20 @@ src/
 
 ## Team Members
 
-| Name | Student ID | Role |
-|------|-----------|------|
-| *(Add team members here)* | | |
+| Name | Student ID | Role | Contribution |
+|------|-----------|------|---:|
+| Nhlonipho Sishi | | Database & Domain Architecture | 12.5% |
+| Scelo Mthethwa | | Database & Domain Architecture | 12.5% |
+| Lucas Mfulwane | | Security & Business Logic | 12.5% |
+| Millano Redcliffe | | Security & Business Logic | 12.5% |
+| Bopaki Montjane | | File Processing & CSV Engine | 12.5% |
+| Phakamile Tshenyego | | File Processing & CSV Engine | 12.5% |
+| Hussein Akim | | User Interface & Quality Assurance | 12.5% |
+| Sinazo Radana | | User Interface & Quality Assurance | 12.5% |
+
+Each member contributed an equal **12.5%** of the project. The full task split,
+file-level evidence, milestone ownership and sign-off table are in
+[`docs/WORK_DIVISION.md`](docs/WORK_DIVISION.md).
 
 ---
 

@@ -94,20 +94,27 @@ public class ReportPanel extends JPanel {
 
     private void exportToCSV() {
         JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setSelectedFile(new JFileChooser().getSelectedFile());
+        fileChooser.setDialogTitle("Save Marks CSV File");
+        fileChooser.setSelectedFile(new java.io.File("marks_export.csv"));
         int result = fileChooser.showSaveDialog(this);
-        if (result == JFileChooser.APPROVE_OPTION) {
-            String filePath = fileChooser.getSelectedFile().getAbsolutePath();
-            try {
-                reportService.getClass(); // Just to avoid unused warning
-                // Use CSVService for export
-                JOptionPane.showMessageDialog(this,
-                        "Exported successfully to: " + filePath);
-            } catch (Exception e) {
-                JOptionPane.showMessageDialog(this,
-                        "Error exporting: " + e.getMessage(),
-                        "Error", JOptionPane.ERROR_MESSAGE);
-            }
+        if (result != JFileChooser.APPROVE_OPTION) {
+            return;
+        }
+
+        String filePath = fileChooser.getSelectedFile().getAbsolutePath();
+        if (!filePath.toLowerCase().endsWith(".csv")) {
+            filePath += ".csv";
+        }
+
+        try {
+            reportService.exportMarksToCSV(filePath);
+            JOptionPane.showMessageDialog(this,
+                    "Exported marks to:\n" + filePath,
+                    "Export Complete", JOptionPane.INFORMATION_MESSAGE);
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this,
+                    "Error exporting: " + e.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 

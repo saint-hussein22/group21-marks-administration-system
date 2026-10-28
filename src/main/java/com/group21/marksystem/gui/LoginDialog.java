@@ -1,7 +1,7 @@
 package com.group21.marksystem.gui;
 
 import com.group21.marksystem.models.User;
-import com.group21.marksystem.services.UserService;
+import com.group21.marksystem.services.AuthenticationService;
 
 import javax.swing.*;
 import java.awt.*;
@@ -16,9 +16,9 @@ public class LoginDialog extends JDialog {
     private JTextField usernameField;
     private JPasswordField passwordField;
     private User authenticatedUser;
-    private UserService userService;
+    private AuthenticationService userService;
 
-    public LoginDialog(UserService userService) {
+    public LoginDialog(AuthenticationService userService) {
         super((Frame) null, "Login - Marks Administration System", true);
         this.userService = userService;
         this.authenticatedUser = null;

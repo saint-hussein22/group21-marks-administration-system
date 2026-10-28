@@ -3,6 +3,7 @@ package com.group21.marksystem.models;
 import java.io.Serializable;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Represents a subject/course in the Marks Administration System.
@@ -82,11 +83,11 @@ public class Subject implements Serializable {
         if (this == obj) return true;
         if (obj == null || getClass() != obj.getClass()) return false;
         Subject subject = (Subject) obj;
-        return subjectCode.equals(subject.subjectCode);
+        return Objects.equals(subjectCode, subject.subjectCode);
     }
 
     @Override
     public int hashCode() {
-        return subjectCode.hashCode();
+        return subjectCode == null ? 0 : subjectCode.hashCode();
     }
 }

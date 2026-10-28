@@ -1,10 +1,11 @@
 package com.group21.marksystem.gui;
 
 import com.group21.marksystem.models.User;
-import com.group21.marksystem.services.MarkService;
-import com.group21.marksystem.services.UserService;
-import com.group21.marksystem.services.ReportService;
+import com.group21.marksystem.services.AuthenticationService;
 import com.group21.marksystem.services.CSVService;
+import com.group21.marksystem.services.MarkService;
+import com.group21.marksystem.services.ReportService;
+import com.group21.marksystem.services.UserService;
 
 import javax.swing.*;
 import java.awt.*;
@@ -17,7 +18,7 @@ import java.awt.*;
  */
 public class GUIMain {
     private MarkService markService;
-    private UserService userService;
+    private AuthenticationService userService;
     private ReportService reportService;
     private CSVService csvService;
     private JFrame mainFrame;
@@ -57,13 +58,25 @@ public class GUIMain {
         // Create tabbed interface
         JTabbedPane tabbedPane = new JTabbedPane();
 
+        DashboardPanel dashboardPanel = new DashboardPanel(markService, reportService, currentUser);
+        StudentPanel studentPanel = new StudentPanel(markService, reportService);
+        SubjectPanel subjectPanel = new SubjectPanel(markService, reportService);
+        MarkPanel markPanel = new MarkPanel(markService, reportService, csvService, currentUser);
+        Runnable refreshAll = () -> {
+            dashboardPanel.refreshData();
+            studentPanel.refreshData();
+            subjectPanel.refreshData();
+            markPanel.refreshData();
+        };
+        markPanel.setOnDataChanged(refreshAll);
+
         // Add tabs
-        tabbedPane.addTab("Dashboard", new DashboardPanel(markService, reportService, currentUser));
-        tabbedPane.addTab("Students", new StudentPanel(markService, reportService));
-        tabbedPane.addTab("Subjects", new SubjectPanel(markService, reportService));
-        tabbedPane.addTab("Marks", new MarkPanel(markService, reportService, csvService, currentUser));
+        tabbedPane.addTab("Dashboard", dashboardPanel);
+        tabbedPane.addTab("Students", studentPanel);
+        tabbedPane.addTab("Subjects", subjectPanel);
+        tabbedPane.addTab("Marks", markPanel);
         tabbedPane.addTab("Reports", new ReportPanel(markService, reportService));
-        tabbedPane.addTab("CSV", new CSVPanels(csvService, reportService));
+        tabbedPane.addTab("CSV", new CSVPanels(csvService, reportService, refreshAll));
 
         if (currentUser.getRole() == User.Role.HOD) {
             tabbedPane.addTab("User Management", new UserPanel(userService, reportService));
@@ -72,8 +85,10 @@ public class GUIMain {
         // Status bar with user info
         JPanel statusPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         statusPanel.setBorder(BorderFactory.createLoweredBevelBorder());
-        JLabel statusLabel = new JLabel(String.format("Logged in as: %s (%s) | Department: %s",
-                currentUser.getFullName(), currentUser.getRole(), currentUser.getDepartment()));
+        JLabel statusLabel = new JLabel(String.format(
+                "Logged in as: %s (%s) | Department: %s | DB: %s",
+                currentUser.getFullName(), currentUser.getRole(), currentUser.getDepartment(),
+                markService.getDatabase().getPath()));
         statusPanel.add(statusLabel);
 
         mainFrame.add(tabbedPane, BorderLayout.CENTER);

@@ -53,6 +53,7 @@ public class StudentPanel extends JPanel {
         editBtn.addActionListener(e -> editStudent());
         deleteBtn.addActionListener(e -> deleteStudent());
         searchBtn.addActionListener(e -> searchStudents(searchField.getText()));
+        refreshBtn.addActionListener(e -> refreshData());
 
         buttonPanel.add(addBtn);
         buttonPanel.add(editBtn);
@@ -64,6 +65,13 @@ public class StudentPanel extends JPanel {
 
         add(buttonPanel, BorderLayout.SOUTH);
 
+        refreshTable();
+    }
+
+    /**
+     * Reloads the table from the shared service (for example after a CSV import).
+     */
+    public void refreshData() {
         refreshTable();
     }
 

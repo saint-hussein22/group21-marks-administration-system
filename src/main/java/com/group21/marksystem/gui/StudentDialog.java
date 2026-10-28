@@ -130,19 +130,25 @@ public class StudentDialog extends JDialog {
             return;
         }
 
-        if (student == null) {
-            // New student
-            if (markService.getStudent(id) != null) {
-                JOptionPane.showMessageDialog(this, "Student ID already exists.");
-                return;
+        try {
+            if (student == null) {
+                // New student
+                if (markService.getStudent(id) != null) {
+                    JOptionPane.showMessageDialog(this, "Student ID already exists.");
+                    return;
+                }
+                Student newStudent = new Student(id, firstName, lastName, email, program, year);
+                markService.addStudent(newStudent);
+                reportService.logActivity("Added student: " + firstName + " " + lastName + " (" + id + ")");
+            } else {
+                // Update existing
+                markService.updateStudent(id, firstName, lastName, email, program, year);
+                reportService.logActivity("Updated student: " + firstName + " " + lastName + " (" + id + ")");
             }
-            Student newStudent = new Student(id, firstName, lastName, email, program, year);
-            markService.addStudent(newStudent);
-            reportService.logActivity("Added student: " + firstName + " " + lastName + " (" + id + ")");
-        } else {
-            // Update existing
-            markService.updateStudent(id, firstName, lastName, email, program, year);
-            reportService.logActivity("Updated student: " + firstName + " " + lastName + " (" + id + ")");
+        } catch (IllegalArgumentException e) {
+            JOptionPane.showMessageDialog(this, e.getMessage(),
+                    "Invalid Student", JOptionPane.ERROR_MESSAGE);
+            return;
         }
 
         saved = true;

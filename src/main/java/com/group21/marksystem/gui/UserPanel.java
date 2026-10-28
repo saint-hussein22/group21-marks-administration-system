@@ -2,7 +2,7 @@ package com.group21.marksystem.gui;
 
 import com.group21.marksystem.models.User;
 import com.group21.marksystem.services.ReportService;
-import com.group21.marksystem.services.UserService;
+import com.group21.marksystem.services.AuthenticationService;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -14,12 +14,12 @@ import java.awt.*;
  * @author Group 21
  */
 public class UserPanel extends JPanel {
-    private UserService userService;
+    private AuthenticationService userService;
     private ReportService reportService;
     private DefaultTableModel tableModel;
     private JTable table;
 
-    public UserPanel(UserService userService, ReportService reportService) {
+    public UserPanel(AuthenticationService userService, ReportService reportService) {
         this.userService = userService;
         this.reportService = reportService;
         initComponents();
@@ -97,6 +97,13 @@ public class UserPanel extends JPanel {
             return;
         }
         String username = (String) tableModel.getValueAt(selected, 0);
+        User currentUser = userService.getCurrentUser();
+        if (currentUser != null && username.equals(currentUser.getUsername())) {
+            JOptionPane.showMessageDialog(this,
+                    "You cannot delete the account you are logged in with.",
+                    "Delete Blocked", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
         int confirm = JOptionPane.showConfirmDialog(this,
                 "Are you sure you want to delete this user?",
                 "Confirm Delete", JOptionPane.YES_NO_OPTION);

@@ -3,11 +3,9 @@ package com.group21.marksystem.services;
 import com.group21.marksystem.models.Mark;
 import com.group21.marksystem.models.Student;
 import com.group21.marksystem.models.Subject;
+import com.group21.marksystem.utils.CSVHelper;
 
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -22,11 +20,11 @@ import java.util.stream.Collectors;
  */
 public class ReportService {
     private MarkService markService;
-    private UserService userService;
+    private AuthenticationService userService;
     private ReadWriteLock lock;
     private List<ActivityLogEntry> activityLog;
 
-    public ReportService(MarkService markService, UserService userService) {
+    public ReportService(MarkService markService, AuthenticationService userService) {
         this.markService = markService;
         this.userService = userService;
         this.lock = new ReentrantReadWriteLock();
@@ -62,8 +60,8 @@ public class ReportService {
 
             report.append("Marks by Subject:\n");
             report.append("───────────────────────────────────────────────────────────\n");
-            report.append(String.format("%-12s %-35s %8s %8s %s\n",
-                    "Subject Code", "Subject Name", "Total", "Weighted", "Grade"));
+            report.append(String.format("%-12s %-35s %8s %s\n",
+                    "Subject Code", "Subject Name", "Score %", "Grade"));
             report.append("───────────────────────────────────────────────────────────\n");
 
             double totalCredits = 0;
@@ -74,13 +72,12 @@ public class ReportService {
                 Mark mark = entry.getValue();
 
                 if (subject != null && mark != null) {
-                    report.append(String.format("%-12s %-35s %8.2f %8.2f %s%s\n",
+                    report.append(String.format("%-12s %-35s %8.2f %s%s\n",
                             subject.getSubjectCode(),
                             subject.getSubjectName(),
-                            mark.getTotalMark(),
-                            mark.isMissing() ? 0.0 : mark.getWeightedTotal(),
+                            mark.getWeightedTotal(),
                             mark.getLetterGrade(),
-                            mark.isMissing() ? " (MISSING)" : ""));
+                            mark.isMissing() ? " (INCOMPLETE)" : ""));
 
                     if (mark.getLetterGrade() != null && !mark.isMissing()) {
                         totalPoints += convertGradeToPoints(mark.getLetterGrade()) * subject.getCredits();
@@ -162,8 +159,8 @@ public class ReportService {
             // Student marks table
             report.append("Student Marks:\n");
             report.append("───────────────────────────────────────────────────────────\n");
-            report.append(String.format("%-10s %-25s %8s %8s %s\n",
-                    "Student ID", "Student Name", "Total", "Weighted", "Grade"));
+            report.append(String.format("%-10s %-25s %8s %s\n",
+                    "Student ID", "Student Name", "Score %", "Grade"));
             report.append("───────────────────────────────────────────────────────────\n");
 
             List<Student> allStudents = markService.getAllStudents();
@@ -171,11 +168,10 @@ public class ReportService {
             for (Student student : allStudents) {
                 Mark mark = student.getMark(subjectCode);
                 if (mark != null) {
-                    report.append(String.format("%-10s %-25s %8.2f %8.2f %s%s\n",
+                    report.append(String.format("%-10s %-25s %8.2f %s%s\n",
                             student.getStudentId(),
                             student.getFullName(),
-                            mark.getTotalMark(),
-                            mark.isMissing() ? 0.0 : mark.getWeightedTotal(),
+                            mark.getWeightedTotal(),
                             mark.getLetterGrade(),
                             mark.isMissing() ? " (INCOMPLETE)" : ""));
                 }
@@ -185,45 +181,32 @@ public class ReportService {
 
             // Statistical summary
             report.append("Statistical Summary:\n");
-            report.append(String.format("  Total Students: %d\n", allStudents.size()));
+            long entered = allStudents.stream()
+                    .map(s -> s.getMark(subjectCode))
+                    .filter(Objects::nonNull)
+                    .count();
+            report.append(String.format("  Students with marks: %d of %d%n",
+                    entered, allStudents.size()));
 
-            OptionalDouble average = allStudents.stream()
+            DoubleSummaryStatistics stats = allStudents.stream()
                     .map(s -> s.getMark(subjectCode))
                     .filter(Objects::nonNull)
                     .filter(m -> !m.isMissing())
                     .mapToDouble(Mark::getWeightedTotal)
-                    .average();
+                    .summaryStatistics();
 
-            if (average.isPresent()) {
-                report.append(String.format("  Class Average: %.2f\n", average.getAsDouble()));
-
-                OptionalDouble max = allStudents.stream()
-                        .map(s -> s.getMark(subjectCode))
-                        .filter(Objects::nonNull)
-                        .filter(m -> !m.isMissing())
-                        .mapToDouble(Mark::getWeightedTotal)
-                        .max();
-
-                OptionalDouble min = allStudents.stream()
-                        .map(s -> s.getMark(subjectCode))
-                        .filter(Objects::nonNull)
-                        .filter(m -> !m.isMissing())
-                        .mapToDouble(Mark::getWeightedTotal)
-                        .min();
-
-                report.append(String.format("  Highest Mark: %.2f\n", max.orElse(0.0)));
-                report.append(String.format("  Lowest Mark: %.2f\n", min.orElse(0.0)));
+            if (stats.getCount() > 0) {
+                report.append(String.format("  Class Average: %.2f%n", stats.getAverage()));
+                report.append(String.format("  Highest Mark: %.2f%n", stats.getMax()));
+                report.append(String.format("  Lowest Mark: %.2f%n", stats.getMin()));
             }
 
-            // Count missing marks
-            long missingCount = allStudents.stream()
-                    .map(s -> s.getMark(subjectCode))
-                    .filter(Objects::nonNull)
-                    .filter(Mark::isMissing)
-                    .count();
-
+            // Students with no mark at all are missing too, matching the
+            // dedicated missing-marks report.
+            int missingCount = markService.getStudentsWithMissingMarks(subjectCode).size();
             if (missingCount > 0) {
-                report.append(String.format("\n  ⚠  Students with missing marks: %d\n", missingCount));
+                report.append(String.format("%n  ⚠  Students with missing or absent marks: %d%n",
+                        missingCount));
             }
 
             return report.toString();
@@ -294,69 +277,14 @@ public class ReportService {
     public void exportMarksToCSV(String filePath) throws IOException {
         lock.readLock().lock();
         try {
-            List<Subject> subjects = markService.getAllSubjects();
-            List<Student> students = markService.getAllStudents();
-
-            // Build CSV header dynamically based on assessment categories
-            List<String> headers = new ArrayList<>();
-            headers.add("StudentID");
-            headers.add("FirstName");
-            headers.add("LastName");
-            headers.add("Email");
-            headers.add("Program");
-            headers.add("Year");
-
-            for (Subject subject : subjects) {
-                for (String category : subject.getAssessmentWeights().keySet()) {
-                    headers.add(subject.getSubjectCode() + "_" + category);
-                }
-                headers.add(subject.getSubjectCode() + "_Total");
-                headers.add(subject.getSubjectCode() + "_Grade");
-            }
-
-            List<String[]> rows = new ArrayList<>();
-
-            for (Student student : students) {
-                List<String> row = new ArrayList<>();
-                row.add(student.getStudentId());
-                row.add(student.getFirstName());
-                row.add(student.getLastName());
-                row.add(student.getEmail());
-                row.add(student.getProgram());
-                row.add(String.valueOf(student.getYear()));
-
-                for (Subject subject : subjects) {
-                    Mark mark = student.getMark(subject.getSubjectCode());
-                    if (mark != null) {
-                        for (Map.Entry<String, Double> entry : subject.getAssessmentWeights().entrySet()) {
-                            Double markValue = mark.getAssessmentMarks().get(entry.getKey());
-                            row.add(markValue != null ? String.valueOf(markValue) : "");
-                        }
-                        row.add(String.valueOf(mark.isMissing() ? 0.0 : mark.getWeightedTotal()));
-                        row.add(String.valueOf(mark.getLetterGrade()));
-                    } else {
-                        for (int i = 0; i < subject.getAssessmentWeights().size() + 2; i++) {
-                            row.add("");
-                        }
-                    }
-                }
-
-                rows.add(row.toArray(new String[0]));
-            }
-
-            try (PrintWriter writer = new PrintWriter(Files.newBufferedWriter(Paths.get(filePath)))) {
-                // Write header
-                writer.println(String.join(",", headers));
-                // Write rows
-                for (String[] row : rows) {
-                    writer.println(String.join(",", row));
-                }
-            }
-
-            logActivity("Exported marks to CSV: " + filePath);
+            CSVHelper.writeMarksCSV(filePath,
+                    markService.getAllStudents(), markService.getAllSubjects());
         } finally {
             lock.readLock().unlock();
         }
+        // logActivity needs the write lock, so it must run after the read lock
+        // is released (a read-to-write upgrade would deadlock).
+        logActivity("Exported marks to CSV: " + filePath);
     }
 
     // ========== Activity Logging ==========

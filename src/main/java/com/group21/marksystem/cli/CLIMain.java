@@ -4,15 +4,13 @@ import com.group21.marksystem.models.Mark;
 import com.group21.marksystem.models.Student;
 import com.group21.marksystem.models.Subject;
 import com.group21.marksystem.models.User;
+import com.group21.marksystem.services.AuthenticationService;
 import com.group21.marksystem.services.CSVService;
 import com.group21.marksystem.services.MarkService;
 import com.group21.marksystem.services.ReportService;
 import com.group21.marksystem.services.UserService;
-import com.group21.marksystem.utils.CSVHelper;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Scanner;
@@ -27,12 +25,22 @@ import java.util.concurrent.ExecutionException;
 public class CLIMain {
     private Scanner scanner;
     private MarkService markService;
-    private UserService userService;
+    private AuthenticationService userService;
     private ReportService reportService;
     private CSVService csvService;
 
     public CLIMain() {
-        this.scanner = new Scanner(System.in);
+        this(new Scanner(System.in));
+    }
+
+    /**
+     * Creates a CLI that reads from the supplied scanner. Sharing the scanner
+     * with the launcher keeps piped/scripted input working correctly.
+     *
+     * @param scanner The input scanner.
+     */
+    public CLIMain(Scanner scanner) {
+        this.scanner = scanner;
         this.markService = new MarkService();
         this.userService = new UserService();
         this.reportService = new ReportService(markService, userService);
@@ -90,8 +98,8 @@ public class CLIMain {
                     break;
                 case "0":
                     running = false;
-                    System.out.println("\nSaving data...");
-                    saveData();
+                    System.out.println("\nAll changes are saved in the SQLite database: "
+                            + markService.getDatabase().getPath());
                     System.out.println("Thank you for using the Marks Administration System!");
                     break;
                 default:
@@ -173,27 +181,31 @@ public class CLIMain {
 
     private void addStudent() {
         System.out.println("\n── Add New Student ──");
-        System.out.print("Student ID: ");
-        String id = scanner.nextLine().trim();
+        String id = readRequired("Student ID: ");
 
         if (markService.getStudent(id) != null) {
             System.out.println("✗ Student ID already exists.");
             return;
         }
 
-        System.out.print("First Name: ");
-        String firstName = scanner.nextLine().trim();
-        System.out.print("Last Name: ");
-        String lastName = scanner.nextLine().trim();
+        String firstName = readRequired("First Name: ");
+        String lastName = readRequired("Last Name: ");
         System.out.print("Email: ");
         String email = scanner.nextLine().trim();
         System.out.print("Program: ");
         String program = scanner.nextLine().trim();
-        System.out.print("Year: ");
-        int year = Integer.parseInt(scanner.nextLine().trim());
+        int year = readInt("Year (1-10): ", 1, 10);
 
         Student student = new Student(id, firstName, lastName, email, program, year);
-        markService.addStudent(student);
+        try {
+            if (!markService.addStudent(student)) {
+                System.out.println("\n✗ Student ID already exists.\n");
+                return;
+            }
+        } catch (IllegalArgumentException e) {
+            System.out.println("\n✗ " + e.getMessage() + "\n");
+            return;
+        }
         System.out.println("\n✓ Student added successfully.\n");
         reportService.logActivity("Added student: " + student.getFullName() + " (" + id + ")");
     }
@@ -246,24 +258,37 @@ public class CLIMain {
 
         System.out.print("First Name [" + student.getFirstName() + "]: ");
         String firstName = scanner.nextLine().trim();
-        if (!firstName.isEmpty()) student.setFirstName(firstName);
+        if (firstName.isEmpty()) firstName = student.getFirstName();
 
         System.out.print("Last Name [" + student.getLastName() + "]: ");
         String lastName = scanner.nextLine().trim();
-        if (!lastName.isEmpty()) student.setLastName(lastName);
+        if (lastName.isEmpty()) lastName = student.getLastName();
 
         System.out.print("Email [" + student.getEmail() + "]: ");
         String email = scanner.nextLine().trim();
-        if (!email.isEmpty()) student.setEmail(email);
+        if (email.isEmpty()) email = student.getEmail();
 
         System.out.print("Program [" + student.getProgram() + "]: ");
         String program = scanner.nextLine().trim();
-        if (!program.isEmpty()) student.setProgram(program);
+        if (program.isEmpty()) program = student.getProgram();
 
         System.out.print("Year [" + student.getYear() + "]: ");
         String yearStr = scanner.nextLine().trim();
-        if (!yearStr.isEmpty()) student.setYear(Integer.parseInt(yearStr));
+        int year = student.getYear();
+        if (!yearStr.isEmpty()) {
+            try {
+                year = Integer.parseInt(yearStr);
+            } catch (NumberFormatException e) {
+                System.out.println("  ✗ Invalid year, keeping " + student.getYear());
+            }
+        }
 
+        try {
+            markService.updateStudent(id, firstName, lastName, email, program, year);
+        } catch (IllegalArgumentException e) {
+            System.out.println("\n✗ " + e.getMessage() + "\n");
+            return;
+        }
         System.out.println("\n✓ Student updated successfully.\n");
         reportService.logActivity("Updated student: " + student.getFullName() + " (" + id + ")");
     }
@@ -310,18 +335,15 @@ public class CLIMain {
 
     private void addSubject() {
         System.out.println("\n── Add New Subject ──");
-        System.out.print("Subject Code: ");
-        String code = scanner.nextLine().trim();
+        String code = readRequired("Subject Code: ");
 
         if (markService.getSubject(code) != null) {
             System.out.println("✗ Subject code already exists.");
             return;
         }
 
-        System.out.print("Subject Name: ");
-        String name = scanner.nextLine().trim();
-        System.out.print("Credits: ");
-        int credits = Integer.parseInt(scanner.nextLine().trim());
+        String name = readRequired("Subject Name: ");
+        int credits = readInt("Credits (1-99): ", 1, 99);
         System.out.print("Description: ");
         String description = scanner.nextLine().trim();
 
@@ -333,12 +355,32 @@ public class CLIMain {
             String category = scanner.nextLine().trim();
             if (category.isEmpty()) break;
 
-            System.out.print("  Weight (%): ");
-            double weight = Double.parseDouble(scanner.nextLine().trim());
+            if (subject.getAssessmentWeights().containsKey(category)) {
+                System.out.println("  ✗ Category already added.");
+                continue;
+            }
+            double weight = readDecimal("  Weight (%): ", 0, 100, false);
             subject.addAssessment(category, weight);
         }
 
-        markService.addSubject(subject);
+        if (subject.getAssessmentWeights().isEmpty()) {
+            System.out.println("\n✗ Add at least one assessment category.\n");
+            return;
+        }
+
+        double total = subject.getAssessmentWeights().values().stream()
+                .mapToDouble(Double::doubleValue).sum();
+        if (Math.abs(total - 100.0) > 0.01) {
+            System.out.printf("\n✗ Assessment weights must add up to 100%% (currently %.2f%%).\n\n", total);
+            return;
+        }
+
+        try {
+            markService.addSubject(subject);
+        } catch (IllegalArgumentException e) {
+            System.out.println("\n✗ " + e.getMessage() + "\n");
+            return;
+        }
         System.out.println("\n✓ Subject added successfully.\n");
         reportService.logActivity("Added subject: " + subject.getSubjectName() + " (" + code + ")");
     }
@@ -392,7 +434,7 @@ public class CLIMain {
             String choice = scanner.nextLine().trim();
 
             switch (choice) {
-                case "1": enterMarks(); break;
+                case "1": enterMarks(currentUser); break;
                 case "2": viewStudentMarks(); break;
                 case "3": generateStudentReport(); break;
                 case "4": generateSubjectReport(); break;
@@ -403,7 +445,7 @@ public class CLIMain {
         }
     }
 
-    private void enterMarks() {
+    private void enterMarks(User currentUser) {
         System.out.print("\nEnter student ID: ");
         String studentId = scanner.nextLine().trim();
         Student student = markService.getStudent(studentId);
@@ -426,23 +468,23 @@ public class CLIMain {
 
         Map<String, Double> assessmentMarks = new LinkedHashMap<>();
         for (Map.Entry<String, Double> entry : subject.getAssessmentWeights().entrySet()) {
-            System.out.printf("  %s (Weight: %.0f%%): ", entry.getKey(), entry.getValue());
-            String input = scanner.nextLine().trim();
-            if (!input.isEmpty()) {
-                try {
-                    assessmentMarks.put(entry.getKey(), Double.parseDouble(input));
-                } catch (NumberFormatException e) {
-                    System.out.println("  ✗ Invalid number, mark set to MISSING");
-                    assessmentMarks.put(entry.getKey(), null);
-                }
-            } else {
-                assessmentMarks.put(entry.getKey(), null);
+            Double score = readDecimal(
+                    String.format("  %s (Weight: %.0f%%, 0-100, blank = missing): ",
+                            entry.getKey(), entry.getValue()),
+                    0, 100, true);
+            assessmentMarks.put(entry.getKey(), score);
+            if (score == null) {
                 System.out.println("  (Left empty - will be flagged as MISSING)");
             }
         }
 
         Mark mark = new Mark(studentId, subjectCode, assessmentMarks);
-        markService.enterMarks(studentId, subjectCode, mark, userService.getCurrentUser().getUsername());
+        try {
+            markService.enterMarks(studentId, subjectCode, mark, currentUser.getUsername());
+        } catch (IllegalArgumentException e) {
+            System.out.println("\n✗ " + e.getMessage() + "\n");
+            return;
+        }
 
         System.out.println("\n✓ Marks entered successfully.");
         System.out.printf("  Weighted Total: %.2f\n", mark.getWeightedTotal());
@@ -512,7 +554,7 @@ public class CLIMain {
             System.out.println("\n── CSV Import/Export ──");
             System.out.println("  1. Import Marks from CSV");
             System.out.println("  2. Export All Marks to CSV");
-            System.out.println("  3. Generate Sample CSV Template");
+            System.out.println("  3. Download Marks CSV Template");
             System.out.println("  0. Back to Main Menu");
             System.out.print("Enter choice: ");
 
@@ -521,7 +563,7 @@ public class CLIMain {
             switch (choice) {
                 case "1": importCSV(); break;
                 case "2": exportCSV(); break;
-                case "3": generateSampleCSV(); break;
+                case "3": downloadTemplate(); break;
                 case "0": return;
                 default: System.out.println("Invalid choice."); break;
             }
@@ -533,14 +575,19 @@ public class CLIMain {
         String filePath = scanner.nextLine().trim();
 
         System.out.println("\nImporting (this may take a moment)...");
-        CompletableFuture<Integer> future = csvService.importMarksFromCSVAsync(filePath);
+        CompletableFuture<CSVService.ImportSummary> future =
+                csvService.importWithReportAsync(filePath);
 
         try {
-            int count = future.get();
-            System.out.println("\n✓ Successfully imported " + count + " record(s).\n");
-            reportService.logActivity("Imported " + count + " records from " + filePath);
+            CSVService.ImportSummary summary = future.get();
+            System.out.println("\n✓ Import complete.\n");
+            System.out.println(summary.describe());
+            System.out.println();
+            reportService.logActivity("Imported " + summary.getMarksSaved()
+                    + " mark record(s) from " + filePath);
         } catch (InterruptedException | ExecutionException e) {
-            System.out.println("\n✗ Import failed: " + e.getCause().getMessage() + "\n");
+            Throwable cause = e.getCause() != null ? e.getCause() : e;
+            System.out.println("\n✗ Import failed: " + cause.getMessage() + "\n");
         }
     }
 
@@ -557,15 +604,21 @@ public class CLIMain {
         }
     }
 
-    private void generateSampleCSV() {
-        System.out.print("\nEnter output file path (e.g., sample_marks.csv): ");
+    private void downloadTemplate() {
+        System.out.print("\nEnter output file path [CPUT_Marks_Template.csv]: ");
         String filePath = scanner.nextLine().trim();
+        if (filePath.isEmpty()) {
+            filePath = "CPUT_Marks_Template.csv";
+        }
 
         try {
-            int count = CSVHelper.generateSampleCSV(filePath);
-            System.out.println("\n✓ Generated sample CSV template with " + count + " record(s) at " + filePath + "\n");
+            int count = csvService.generateTemplate(filePath);
+            System.out.println("\n✓ Marks template downloaded with " + count
+                    + " student row(s) at " + filePath);
+            System.out.println("  Fill in the Assessment columns, then use option 1 to import it.\n");
+            reportService.logActivity("Downloaded CSV template: " + filePath);
         } catch (IOException e) {
-            System.out.println("\n✗ Failed to generate sample CSV: " + e.getMessage() + "\n");
+            System.out.println("\n✗ Failed to generate template: " + e.getMessage() + "\n");
         }
     }
 
@@ -631,7 +684,7 @@ public class CLIMain {
                 case "1": listUsers(); break;
                 case "2": addUser(); break;
                 case "3": updateUser(); break;
-                case "4": deleteUser(); break;
+                case "4": deleteUser(currentUser); break;
                 case "0": return;
                 default: System.out.println("Invalid choice."); break;
             }
@@ -653,27 +706,28 @@ public class CLIMain {
 
     private void addUser() {
         System.out.println("\n── Add User ──");
-        System.out.print("Username: ");
-        String username = scanner.nextLine().trim();
+        String username = readRequired("Username: ");
 
         if (userService.getUser(username) != null) {
             System.out.println("✗ Username already exists.");
             return;
         }
 
-        System.out.print("Password: ");
-        String password = scanner.nextLine().trim();
+        String password = readRequired("Password: ");
         System.out.println("Role: 1=Lecturer, 2=HoD");
-        System.out.print("Enter role (1/2): ");
-        String roleChoice = scanner.nextLine().trim();
-        User.Role role = "2".equals(roleChoice) ? User.Role.HOD : User.Role.LECTURER;
+        int roleChoice = readInt("Enter role (1/2): ", 1, 2);
+        User.Role role = roleChoice == 2 ? User.Role.HOD : User.Role.LECTURER;
 
-        System.out.print("Full Name: ");
-        String fullName = scanner.nextLine().trim();
+        String fullName = readRequired("Full Name: ");
         System.out.print("Department: ");
         String department = scanner.nextLine().trim();
 
-        userService.registerUser(username, password, role, fullName, department);
+        try {
+            userService.registerUser(username, password, role, fullName, department);
+        } catch (IllegalArgumentException e) {
+            System.out.println("\n✗ " + e.getMessage() + "\n");
+            return;
+        }
         System.out.println("\n✓ User added successfully.\n");
         reportService.logActivity("Added user: " + username);
     }
@@ -700,7 +754,13 @@ public class CLIMain {
         String roleChoice = scanner.nextLine().trim();
         User.Role role = user.getRole();
         if (!roleChoice.isEmpty()) {
-            role = "2".equals(roleChoice) ? User.Role.HOD : User.Role.LECTURER;
+            if ("1".equals(roleChoice)) {
+                role = User.Role.LECTURER;
+            } else if ("2".equals(roleChoice)) {
+                role = User.Role.HOD;
+            } else {
+                System.out.println("  ✗ Invalid role, keeping " + user.getRole());
+            }
         }
 
         System.out.print("New full name (Enter to keep): ");
@@ -711,15 +771,25 @@ public class CLIMain {
         String department = scanner.nextLine().trim();
         if (!department.isEmpty()) user.setDepartment(department);
 
-        userService.updateUser(username, password.isEmpty() ? null : password, role,
-                user.getFullName(), user.getDepartment());
+        try {
+            userService.updateUser(username, password.isEmpty() ? null : password, role,
+                    user.getFullName(), user.getDepartment());
+        } catch (IllegalArgumentException e) {
+            System.out.println("\n✗ " + e.getMessage() + "\n");
+            return;
+        }
         System.out.println("\n✓ User updated successfully.\n");
         reportService.logActivity("Updated user: " + username);
     }
 
-    private void deleteUser() {
+    private void deleteUser(User currentUser) {
         System.out.print("\nEnter username to delete: ");
         String username = scanner.nextLine().trim();
+
+        if (currentUser != null && username.equals(currentUser.getUsername())) {
+            System.out.println("\n✗ You cannot delete the account you are logged in with.\n");
+            return;
+        }
 
         System.out.print("Are you sure? (y/n): ");
         String confirm = scanner.nextLine().trim();
@@ -734,27 +804,62 @@ public class CLIMain {
         }
     }
 
-    // ===== Persistence =====
+    // ===== Input helpers =====
 
-    private void saveData() {
-        try {
-            String dataDir = "data";
-            Files.createDirectories(Paths.get(dataDir));
-
-            markService.saveToFile(dataDir + "/marks_data.ser");
-            System.out.println("✓ Marks data saved.");
-        } catch (IOException e) {
-            System.err.println("⚠  Warning: Could not save data: " + e.getMessage());
-        }
-
-        try {
-            String dataDir = "data";
-            Files.createDirectories(Paths.get(dataDir));
-
-            userService.saveToFile(dataDir + "/users_data.ser");
-            System.out.println("✓ User data saved.");
-        } catch (IOException e) {
-            System.err.println("⚠  Warning: Could not save user data: " + e.getMessage());
+    /**
+     * Reads a non-empty line, re-prompting until the user enters something.
+     */
+    private String readRequired(String prompt) {
+        while (true) {
+            System.out.print(prompt);
+            String value = scanner.nextLine().trim();
+            if (!value.isEmpty()) {
+                return value;
+            }
+            System.out.println("  ✗ This field cannot be empty.");
         }
     }
+
+    /**
+     * Reads a whole number inside an inclusive range.
+     */
+    private int readInt(String prompt, int min, int max) {
+        while (true) {
+            System.out.print(prompt);
+            String input = scanner.nextLine().trim();
+            try {
+                int value = Integer.parseInt(input);
+                if (value >= min && value <= max) {
+                    return value;
+                }
+                System.out.println("  ✗ Enter a number between " + min + " and " + max + ".");
+            } catch (NumberFormatException e) {
+                System.out.println("  ✗ Please enter a whole number.");
+            }
+        }
+    }
+
+    /**
+     * Reads a decimal inside a range. When {@code allowBlank} is true an empty
+     * line returns {@code null}.
+     */
+    private Double readDecimal(String prompt, double min, double max, boolean allowBlank) {
+        while (true) {
+            System.out.print(prompt);
+            String input = scanner.nextLine().trim();
+            if (input.isEmpty() && allowBlank) {
+                return null;
+            }
+            try {
+                double value = Double.parseDouble(input);
+                if (Double.isFinite(value) && value >= min && value <= max) {
+                    return value;
+                }
+                System.out.println("  ✗ Enter a number between " + (int) min + " and " + (int) max + ".");
+            } catch (NumberFormatException e) {
+                System.out.println("  ✗ Please enter a number.");
+            }
+        }
+    }
+
 }

@@ -3,6 +3,7 @@ package com.group21.marksystem.models;
 import java.io.Serializable;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Represents a student in the Marks Administration System.
@@ -97,7 +98,7 @@ public class Student implements Serializable {
     }
 
     public boolean hasMissingMarks() {
-        return marks.containsValue(null) || marks.values().stream().anyMatch(m -> m == null);
+        return marks.values().stream().anyMatch(mark -> mark == null || mark.isMissing());
     }
 
     public String getFullName() {
@@ -114,11 +115,11 @@ public class Student implements Serializable {
         if (this == obj) return true;
         if (obj == null || getClass() != obj.getClass()) return false;
         Student student = (Student) obj;
-        return studentId.equals(student.studentId);
+        return Objects.equals(studentId, student.studentId);
     }
 
     @Override
     public int hashCode() {
-        return studentId.hashCode();
+        return studentId == null ? 0 : studentId.hashCode();
     }
 }

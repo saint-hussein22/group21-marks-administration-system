@@ -27,6 +27,13 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- SQLite JDBC driver for the persistent database -->
+        <dependency>
+            <groupId>org.xerial</groupId>
+            <artifactId>sqlite-jdbc</artifactId>
+            <version>3.45.3.0</version>
+        </dependency>
+
         <!-- OpenCSV for CSV handling -->
         <dependency>
             <groupId>com.opencsv</groupId>

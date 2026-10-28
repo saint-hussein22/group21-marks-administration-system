@@ -112,6 +112,13 @@ public class DashboardPanel extends JPanel {
         return card;
     }
 
+    /**
+     * Reloads the dashboard statistics from the shared service.
+     */
+    public void refreshData() {
+        refresh();
+    }
+
     private void refresh() {
         removeAll();
         initComponents();

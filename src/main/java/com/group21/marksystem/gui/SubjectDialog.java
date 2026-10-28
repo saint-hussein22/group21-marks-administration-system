@@ -102,9 +102,6 @@ public class SubjectDialog extends JDialog {
         panel.add(buttonPanel, BorderLayout.SOUTH);
 
         add(panel);
-
-        // Add initial assessment fields
-        addAssessmentField("", "");
     }
 
     private void addAssessmentField(String category, String weight) {
@@ -129,12 +126,17 @@ public class SubjectDialog extends JDialog {
 
     private void populateFields() {
         codeField.setText(subject.getSubjectCode());
+        codeField.setEditable(false);
         nameField.setText(subject.getSubjectName());
         creditsField.setText(String.valueOf(subject.getCredits()));
         descriptionField.setText(subject.getDescription());
 
-        for (Map.Entry<String, Double> entry : subject.getAssessmentWeights().entrySet()) {
-            addAssessmentField(entry.getKey(), String.valueOf(entry.getValue()));
+        if (subject.getAssessmentWeights().isEmpty()) {
+            addAssessmentField("", "");
+        } else {
+            for (Map.Entry<String, Double> entry : subject.getAssessmentWeights().entrySet()) {
+                addAssessmentField(entry.getKey(), String.valueOf(entry.getValue()));
+            }
         }
     }
 
@@ -156,33 +158,74 @@ public class SubjectDialog extends JDialog {
             return;
         }
 
-        // Collect assessments
+        // Collect assessments, rejecting rows that cannot be interpreted.
         Map<String, Double> weights = new LinkedHashMap<>();
         for (Component comp : assessmentsPanel.getComponents()) {
-            if (comp instanceof JPanel) {
-                JPanel row = (JPanel) comp;
-                JTextField catField = (JTextField) row.getComponent(1);
-                JTextField wtField = (JTextField) row.getComponent(3);
-                String cat = catField.getText().trim();
-                String wt = wtField.getText().trim();
-                if (!cat.isEmpty() && !wt.isEmpty()) {
-                    try {
-                        weights.put(cat, Double.parseDouble(wt));
-                    } catch (NumberFormatException ignored) {}
-                }
+            if (!(comp instanceof JPanel)) {
+                continue;
+            }
+            JPanel row = (JPanel) comp;
+            JTextField catField = (JTextField) row.getComponent(1);
+            JTextField wtField = (JTextField) row.getComponent(3);
+            String cat = catField.getText().trim();
+            String wt = wtField.getText().trim();
+
+            if (cat.isEmpty() && wt.isEmpty()) {
+                continue; // unused row
+            }
+            if (cat.isEmpty()) {
+                JOptionPane.showMessageDialog(this,
+                        "Every assessment needs a category name.",
+                        "Invalid Assessment", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            if (wt.isEmpty()) {
+                JOptionPane.showMessageDialog(this,
+                        "Enter a weight for '" + cat + "'.",
+                        "Invalid Assessment", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            if (weights.containsKey(cat)) {
+                JOptionPane.showMessageDialog(this,
+                        "Assessment category '" + cat + "' is listed more than once.",
+                        "Invalid Assessment", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            try {
+                weights.put(cat, Double.parseDouble(wt));
+            } catch (NumberFormatException e) {
+                JOptionPane.showMessageDialog(this,
+                        "Invalid weight for '" + cat + "': " + wt,
+                        "Invalid Assessment", JOptionPane.ERROR_MESSAGE);
+                return;
             }
         }
 
-        if (subject == null) {
-            Subject newSubject = new Subject(code, name, credits, desc);
-            for (Map.Entry<String, Double> entry : weights.entrySet()) {
-                newSubject.addAssessment(entry.getKey(), entry.getValue());
+        try {
+            if (subject == null) {
+                Subject newSubject = new Subject(code, name, credits, desc);
+                for (Map.Entry<String, Double> entry : weights.entrySet()) {
+                    newSubject.addAssessment(entry.getKey(), entry.getValue());
+                }
+                if (!markService.addSubject(newSubject)) {
+                    JOptionPane.showMessageDialog(this,
+                            "Subject code already exists.",
+                            "Could Not Save", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+                reportService.logActivity("Added subject: " + code);
+            } else {
+                if (!markService.updateSubject(code, name, credits, desc, weights)) {
+                    JOptionPane.showMessageDialog(this, "Subject not found.",
+                            "Update Failed", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+                reportService.logActivity("Edited subject: " + code);
             }
-            markService.addSubject(newSubject);
-            reportService.logActivity("Added subject: " + code);
-        } else {
-            // Note: For editing, we would update the existing subject
-            reportService.logActivity("Edited subject: " + code);
+        } catch (IllegalArgumentException e) {
+            JOptionPane.showMessageDialog(this, e.getMessage(),
+                    "Invalid Subject", JOptionPane.ERROR_MESSAGE);
+            return;
         }
 
         saved = true;

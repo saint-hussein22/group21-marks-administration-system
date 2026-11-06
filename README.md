@@ -28,11 +28,13 @@ The **Marks Administration System** is a secure academic tool that allows lectur
 - **GUI & CLI Interface** — Swing-based graphical interface and command-line menu.
 
 ### Advanced Features
-- **Multithreading** — Background processing for CSV import/export.
+- **Multithreading** — Background processing for CSV import/export (`CompletableFuture`).
 - **SQLite Database** — One shared database for the CLI and GUI, with immediate persistence of students, subjects, marks, and users.
-- **Recursion** — Directory traversal for batch CSV processing.
-- **Generics & Collections** — Type-safe data structures.
-- **Streams API** — Data filtering and aggregation.
+- **Recursion** — Folder walk via `CSVHelper.findCSVFiles` (CLI option “Import Folder Recursively”, GUI “Import Folder of CSVs”).
+- **Object serialization** — `SnapshotHelper` writes a `.ser` backup of students, subjects and marks.
+- **Interfaces** — `MarkRepository` and `AuthenticationService` separate contracts from implementations.
+- **Generics & Collections** — Type-safe maps and lists.
+- **Streams API** — Data filtering and aggregation in search and reports.
 
 ---
 
@@ -140,11 +142,13 @@ file-level evidence, milestone ownership and sign-off table are in
 
 ## Deliverables
 
-1. ✅ Source Code (Java project)
+1. ✅ Source Code — zip as `Group21_MarksAdministrationSystem.zip`
 2. ✅ ReadMe (this file)
-3. ✅ System Design Document (PDF)
-4. ✅ Graduate Attribute Reflection (in report)
-5. ✅ Demo Presentation (Week 12)
+3. ✅ System Design Document — [`docs/Group21_System_Design_Document.pdf`](docs/Group21_System_Design_Document.pdf)
+4. ✅ Graduate Attribute Reflection (GA2 & GA7) — Section 5 of the design document
+5. ⏳ Demo Presentation — Week 12 (7–10 minutes; video to be recorded separately)
+
+Default logins: `lecturer1` / `pass123` (lecturer) and `hod1` / `admin123` (HoD).
 
 ---
 

@@ -9,6 +9,7 @@ import com.group21.marksystem.services.CSVService;
 import com.group21.marksystem.services.MarkService;
 import com.group21.marksystem.services.ReportService;
 import com.group21.marksystem.services.UserService;
+import com.group21.marksystem.utils.SnapshotHelper;
 
 import java.io.IOException;
 import java.util.LinkedHashMap;
@@ -555,6 +556,8 @@ public class CLIMain {
             System.out.println("  1. Import Marks from CSV");
             System.out.println("  2. Export All Marks to CSV");
             System.out.println("  3. Download Marks CSV Template");
+            System.out.println("  4. Import Folder Recursively (CSV)");
+            System.out.println("  5. Save Object Snapshot (.ser)");
             System.out.println("  0. Back to Main Menu");
             System.out.print("Enter choice: ");
 
@@ -564,6 +567,8 @@ public class CLIMain {
                 case "1": importCSV(); break;
                 case "2": exportCSV(); break;
                 case "3": downloadTemplate(); break;
+                case "4": importFolderRecursively(); break;
+                case "5": saveObjectSnapshot(); break;
                 case "0": return;
                 default: System.out.println("Invalid choice."); break;
             }
@@ -619,6 +624,45 @@ public class CLIMain {
             reportService.logActivity("Downloaded CSV template: " + filePath);
         } catch (IOException e) {
             System.out.println("\n✗ Failed to generate template: " + e.getMessage() + "\n");
+        }
+    }
+
+    private void importFolderRecursively() {
+        System.out.print("\nEnter folder path to scan for CSV files: ");
+        String directory = scanner.nextLine().trim();
+
+        System.out.println("\nScanning folders recursively and importing...");
+        CompletableFuture<CSVService.ImportSummary> future =
+                csvService.importDirectoryAsync(directory);
+
+        try {
+            CSVService.ImportSummary summary = future.get();
+            System.out.println("\n✓ Folder import complete.\n");
+            System.out.println(summary.describe());
+            System.out.println();
+            reportService.logActivity("Recursive CSV import from " + directory
+                    + " saved " + summary.getMarksSaved() + " mark(s)");
+        } catch (InterruptedException | ExecutionException e) {
+            Throwable cause = e.getCause() != null ? e.getCause() : e;
+            System.out.println("\n✗ Folder import failed: " + cause.getMessage() + "\n");
+        }
+    }
+
+    private void saveObjectSnapshot() {
+        System.out.print("\nEnter snapshot path [data/marks_snapshot.ser]: ");
+        String filePath = scanner.nextLine().trim();
+        if (filePath.isEmpty()) {
+            filePath = "data/marks_snapshot.ser";
+        }
+
+        try {
+            SnapshotHelper.save(filePath, markService.getAllStudents(), markService.getAllSubjects());
+            SnapshotHelper.Snapshot snapshot = SnapshotHelper.load(filePath);
+            System.out.println("\n✓ Object snapshot written to " + filePath);
+            System.out.println("  " + snapshot.describe() + "\n");
+            reportService.logActivity("Saved object snapshot: " + filePath);
+        } catch (IOException | ClassNotFoundException e) {
+            System.out.println("\n✗ Snapshot failed: " + e.getMessage() + "\n");
         }
     }
 

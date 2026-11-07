@@ -1,7 +1,9 @@
 package com.group21.marksystem.gui;
 
 import com.group21.marksystem.services.CSVService;
+import com.group21.marksystem.services.MarkService;
 import com.group21.marksystem.services.ReportService;
+import com.group21.marksystem.utils.SnapshotHelper;
 
 import javax.swing.*;
 import java.awt.*;
@@ -17,21 +19,28 @@ public class CSVPanels extends JPanel {
 
     private final CSVService csvService;
     private final ReportService reportService;
+    private final MarkService markService;
     private final Runnable onDataChanged;
 
     public CSVPanels(CSVService csvService, ReportService reportService) {
-        this(csvService, reportService, () -> { });
+        this(csvService, reportService, null, () -> { });
     }
 
     public CSVPanels(CSVService csvService, ReportService reportService, Runnable onDataChanged) {
+        this(csvService, reportService, null, onDataChanged);
+    }
+
+    public CSVPanels(CSVService csvService, ReportService reportService,
+                     MarkService markService, Runnable onDataChanged) {
         this.csvService = csvService;
         this.reportService = reportService;
+        this.markService = markService;
         this.onDataChanged = onDataChanged != null ? onDataChanged : () -> { };
         initComponents();
     }
 
     private void initComponents() {
-        setLayout(new GridLayout(3, 1, 10, 10));
+        setLayout(new GridLayout(5, 1, 10, 10));
         setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
         // Template panel
@@ -51,6 +60,14 @@ public class CSVPanels extends JPanel {
         importPanel.add(importBtn);
         importPanel.add(new JLabel("Updates existing students and replaces their marks."));
 
+        // Recursive folder import
+        JPanel folderPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        folderPanel.setBorder(BorderFactory.createTitledBorder("Recursive Folder Import"));
+        JButton folderBtn = new JButton("Import Folder of CSVs...");
+        folderBtn.addActionListener(e -> importFolder());
+        folderPanel.add(folderBtn);
+        folderPanel.add(new JLabel("Walks sub-folders recursively and imports every .csv file found."));
+
         // Export panel
         JPanel exportPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         exportPanel.setBorder(BorderFactory.createTitledBorder("CSV Export"));
@@ -59,9 +76,19 @@ public class CSVPanels extends JPanel {
         exportPanel.add(exportBtn);
         exportPanel.add(new JLabel("Creates a file in the same layout as the template."));
 
+        // Object snapshot
+        JPanel snapshotPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        snapshotPanel.setBorder(BorderFactory.createTitledBorder("Object Snapshot"));
+        JButton snapshotBtn = new JButton("Save .ser Snapshot...");
+        snapshotBtn.addActionListener(e -> saveSnapshot());
+        snapshotPanel.add(snapshotBtn);
+        snapshotPanel.add(new JLabel("Java object serialization backup of students, subjects and marks."));
+
         add(templatePanel);
         add(importPanel);
+        add(folderPanel);
         add(exportPanel);
+        add(snapshotPanel);
     }
 
     private void downloadTemplate() {
@@ -141,6 +168,76 @@ public class CSVPanels extends JPanel {
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this,
                     "Export failed: " + e.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void importFolder() {
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle("Select Folder Containing CSV Files");
+        fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+        if (fileChooser.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) {
+            return;
+        }
+
+        String directory = fileChooser.getSelectedFile().getAbsolutePath();
+        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+
+        csvService.importDirectoryAsync(directory)
+                .thenAccept(summary -> SwingUtilities.invokeLater(() -> {
+                    setCursor(Cursor.getDefaultCursor());
+                    JTextArea area = new JTextArea(summary.describe(), 14, 70);
+                    area.setEditable(false);
+                    area.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
+                    JOptionPane.showMessageDialog(this,
+                            new JScrollPane(area),
+                            "Folder Import Complete", JOptionPane.INFORMATION_MESSAGE);
+                    reportService.logActivity("Recursive CSV import from " + directory
+                            + " saved " + summary.getMarksSaved() + " mark(s)");
+                    onDataChanged.run();
+                }))
+                .exceptionally(ex -> {
+                    Throwable cause = ex.getCause() != null ? ex.getCause() : ex;
+                    SwingUtilities.invokeLater(() -> {
+                        setCursor(Cursor.getDefaultCursor());
+                        JOptionPane.showMessageDialog(this,
+                                "Folder import failed: " + cause.getMessage(),
+                                "Error", JOptionPane.ERROR_MESSAGE);
+                    });
+                    return null;
+                });
+    }
+
+    private void saveSnapshot() {
+        if (markService == null) {
+            JOptionPane.showMessageDialog(this,
+                    "Snapshot is unavailable in this view.",
+                    "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle("Save Object Snapshot");
+        fileChooser.setSelectedFile(new File("marks_snapshot.ser"));
+        if (fileChooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION) {
+            return;
+        }
+
+        String filePath = fileChooser.getSelectedFile().getAbsolutePath();
+        if (!filePath.toLowerCase().endsWith(".ser")) {
+            filePath = filePath + ".ser";
+        }
+
+        try {
+            SnapshotHelper.save(filePath, markService.getAllStudents(), markService.getAllSubjects());
+            SnapshotHelper.Snapshot snapshot = SnapshotHelper.load(filePath);
+            JOptionPane.showMessageDialog(this,
+                    "Snapshot saved:\n" + filePath + "\n\n" + snapshot.describe(),
+                    "Snapshot Complete", JOptionPane.INFORMATION_MESSAGE);
+            reportService.logActivity("Saved object snapshot: " + filePath);
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this,
+                    "Snapshot failed: " + e.getMessage(),
                     "Error", JOptionPane.ERROR_MESSAGE);
         }
     }

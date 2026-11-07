@@ -1,0 +1,73 @@
+[
+  {
+    "name": "01_intro",
+    "id": "c20de1ea-c1d4-425c-b521-e3dd0c5dc04b",
+    "path": "/Users/husseinakim/Downloads/group21-marks-administration-system-main 2/docs/voice/segments/01_intro.wav",
+    "duration": 24.864,
+    "text": "Good day. We are Group 21, and this is our Marks Administration System for SDN260S. Lecturers capture and manage student marks; the Head of Department oversees modules and reports. The system has a layered design: models, database, services, then CLI and Swing GUI. Both interfaces share one database, so a mark entered in the console is available after restart."
+  },
+  {
+    "name": "02_database",
+    "id": "35e4a534-026a-4c5e-bdc0-05e660fd046f",
+    "engine": "luxtts",
+    "path": "/Users/husseinakim/Downloads/group21-marks-administration-system-main 2/docs/voice/segments/02_database.wav",
+    "duration": 25.456,
+    "text": "Persistence uses J D B C. Our submission build uses SQLite in the data folder, in a file called marks dot D B. It is created on first run with seeded C P U T modules and students. The teammate NetBeans build uses My S Q L via XAMPP, and a schema SQL file with tables for users, modules, students, assessments, marks, and an audit log. We start with Maven package and run the jar, or Run Project in NetBeans. Choose graphical or command-line mode at the prompt."
+  },
+  {
+    "name": "03_login",
+    "id": "d5201b07-52ef-488f-b983-a55bf29af9a8",
+    "engine": "luxtts",
+    "path": "/Users/husseinakim/Downloads/group21-marks-administration-system-main 2/docs/voice/segments/03_login.wav",
+    "duration": 19.418666666666667,
+    "text": "Access is role-based: Lecturer and Head of Department. Passwords are hashed \u2014 P B K D F two in the Maven build, and salted S H A two-fifty-six in the My S Q L build. Logging in as a lecturer shows student, subject, marks, reports, and C S V tools. Head of Department features stay hidden. Logging in as Head of Department unlocks user or module management, depending on the build."
+  },
+  {
+    "name": "04_lecturer_marks",
+    "id": "810d2f43-6192-4478-948f-b0cf4a165c01",
+    "engine": "luxtts",
+    "path": "/Users/husseinakim/Downloads/group21-marks-administration-system-main 2/docs/voice/segments/04_lecturer_marks.wav",
+    "duration": 10.378666666666666,
+    "text": "After login, the lecturer sees the dashboard with a class overview, then opens the Marks tab. Selecting a student and module loads existing assessments. The weighted total and letter grade update from the subject weights."
+  },
+  {
+    "name": "05_manual_marks",
+    "id": "f171ce57-28d7-4ba9-9ca1-dee68758bcfd",
+    "engine": "luxtts",
+    "path": "/Users/husseinakim/Downloads/group21-marks-administration-system-main 2/docs/voice/segments/05_manual_marks.wav",
+    "duration": 13.28,
+    "text": "Lecturers can add or edit students and subjects. Assessment weights must total one hundred percent. We enter marks for Test one, Test two, and Exam \u2014 for example, eighty-two, seventy-one, and ninety. The system calculates eighty-three point two five, and grade B plus."
+  },
+  {
+    "name": "06_csv",
+    "id": "1f72daff-2baa-4e60-bf23-d7b034ee0c92",
+    "engine": "luxtts",
+    "path": "/Users/husseinakim/Downloads/group21-marks-administration-system-main 2/docs/voice/segments/06_csv.wav",
+    "duration": 11.626666666666667,
+    "text": "From the C S V panel we download a template, export marks, and import a filled file. Import can also scan a folder recursively. The missing-marks report flags students with incomplete assessments, so nothing is silently left blank."
+  },
+  {
+    "name": "07_hod",
+    "id": "7acad9f3-1b0b-429e-8b04-2ce99403e2e8",
+    "engine": "luxtts",
+    "path": "/Users/husseinakim/Downloads/group21-marks-administration-system-main 2/docs/voice/segments/07_hod.wav",
+    "duration": 12.170666666666667,
+    "text": "As Head of Department, we see all modules, assign lecturers, and open summary and missing-entry reports across the faculty. Module averages and missing counts appear in one place. User management or module management is Head of Department only."
+  },
+  {
+    "name": "08_cli",
+    "id": "1f6e3b99-85b2-4acc-9aee-1d619ea17502",
+    "engine": "luxtts",
+    "path": "/Users/husseinakim/Downloads/group21-marks-administration-system-main 2/docs/voice/segments/08_cli.wav",
+    "duration": 13.109333333333334,
+    "text": "The same services drive the command-line interface. We choose option one or two at startup, log in, open a subject, enter marks, run reports, and export C S V. After restart, marks remain in the database \u2014 proof of persistence without the graphical interface."
+  },
+  {
+    "name": "09_conclusion",
+    "id": "a6b3e0ca-461c-4a1f-8f24-e8fb1c4f67e4",
+    "engine": "luxtts",
+    "path": "/Users/husseinakim/Downloads/group21-marks-administration-system-main 2/docs/voice/segments/09_conclusion.wav",
+    "duration": 16.458666666666666,
+    "text": "We verified the build with thirty-one automated J Unit tests covering grades, passwords, persistence, C S V, and snapshots. The My S Q L build also writes an audit log of important actions. In short: secure login, shared storage, weighted processing, C S V and reports, command-line and graphical interfaces. Thank you."
+  }
+]

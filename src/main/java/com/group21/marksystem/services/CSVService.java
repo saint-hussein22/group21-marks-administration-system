@@ -116,6 +116,59 @@ public class CSVService {
      * @return A summary of the import.
      * @throws IOException If the file cannot be read or the header is invalid.
      */
+    /**
+     * Recursively finds every {@code .csv} file under a directory and imports each one.
+     *
+     * <p>Directory traversal is done by {@link CSVHelper#findCSVFiles(String)}, which
+     * walks sub-folders recursively. Files that fail are reported as warnings and the
+     * remaining files are still processed.</p>
+     *
+     * @param directoryPath Root folder to search.
+     * @return Combined import summary across all discovered files.
+     * @throws IOException If the path is not a readable directory.
+     */
+    public ImportSummary importDirectoryDetailed(String directoryPath) throws IOException {
+        Path root = Paths.get(directoryPath);
+        if (!Files.isDirectory(root)) {
+            throw new IOException("Not a directory: " + directoryPath);
+        }
+
+        List<String> files = CSVHelper.findCSVFiles(directoryPath);
+        ImportSummary combined = new ImportSummary();
+        if (files.isEmpty()) {
+            combined.addWarning("No CSV files found under " + directoryPath);
+            return combined;
+        }
+
+        for (String file : files) {
+            try {
+                ImportSummary one = importMarksFromCSVDetailed(file);
+                combined.merge(one);
+                combined.addWarning("Imported " + file
+                        + " (" + one.getMarksSaved() + " marks saved)");
+            } catch (IOException e) {
+                combined.addWarning("Skipped " + file + ": " + e.getMessage());
+            }
+        }
+        return combined;
+    }
+
+    /**
+     * Asynchronously imports every CSV under a directory tree.
+     *
+     * @param directoryPath Root folder to search.
+     * @return Future that completes with the combined summary.
+     */
+    public CompletableFuture<ImportSummary> importDirectoryAsync(String directoryPath) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                return importDirectoryDetailed(directoryPath);
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to import directory: " + e.getMessage(), e);
+            }
+        });
+    }
+
     public ImportSummary importMarksFromCSVDetailed(String filePath) throws IOException {
         Path path = Paths.get(filePath);
         if (!Files.exists(path)) {
@@ -409,6 +462,22 @@ public class CSVService {
 
         void addWarning(String warning) {
             warnings.add(warning);
+        }
+
+        /**
+         * Adds another file's counts into this summary. Warnings are not copied;
+         * the caller adds a short note per file instead.
+         *
+         * @param other Another import result.
+         */
+        void merge(ImportSummary other) {
+            if (other == null) {
+                return;
+            }
+            rowsProcessed += other.rowsProcessed;
+            studentsCreated += other.studentsCreated;
+            studentsUpdated += other.studentsUpdated;
+            marksSaved += other.marksSaved;
         }
 
         /**

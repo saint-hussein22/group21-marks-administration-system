@@ -1,0 +1,5 @@
+StudentID,FirstName,LastName,Email,Program,Year,SubjectCode,Assessment1,Assessment2,Assessment3,Total,Grade
+S001,Alice,Johnson,alice@student.university.ac.za,Computer Science,2,CS260,85,90,78,,
+S002,Bob,Smith,bob@student.university.ac.za,Computer Science,2,CS260,72,88,91,,
+S003,Carol,Williams,carol@student.university.ac.za,Computer Science,2,CS260,,65,72,,
+S004,David,Brown,david@student.university.ac.za,Computer Science,2,CS260,55,48,60,,

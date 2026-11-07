@@ -1,0 +1,6 @@
+StudentID,FirstName,LastName,Email,Program,Year,PRG300_Lab Work,PRG300_Project,PRG300_Exam,PRG300_WeightedTotal,PRG300_Grade,Engineering Ethics 2_Assessment,Engineering Ethics 2_tes1,Engineering Ethics 2_Fisa,Engineering Ethics 2_WeightedTotal,Engineering Ethics 2_Grade,CS260_Assignment 1,CS260_Assignment 2,CS260_Exam,CS260_WeightedTotal,CS260_Grade,DB320_Assignment 1,DB320_Assignment 2,DB320_Exam,DB320_WeightedTotal,DB320_Grade
+S005,Eve,Davis,eve.davis@student.university.ac.za,Computer Science,2,,,,,,,,,,,,,,,,,,,,
+S003,Carol,Williams,carol.williams@student.university.ac.za,Computer Science,2,,,,,,,,,,,,,,,,,,,,
+S004,David,Brown,david.brown@student.university.ac.za,Information Technology,2,,,,,,,,,,,,,,,,,,,,
+S001,Alice,Johnson,alice.johnson@student.university.ac.za,Computer Science,2,,,,,,6.0,27.0,54.0,41.10,F,,,,,,,,,,
+S002,Bob,Smith,bob.smith@student.university.ac.za,Computer Science,2,,,,,,,,,,,,,,,,,,,,

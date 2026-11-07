@@ -76,7 +76,7 @@ public class GUIMain {
         tabbedPane.addTab("Subjects", subjectPanel);
         tabbedPane.addTab("Marks", markPanel);
         tabbedPane.addTab("Reports", new ReportPanel(markService, reportService));
-        tabbedPane.addTab("CSV", new CSVPanels(csvService, reportService, refreshAll));
+        tabbedPane.addTab("CSV", new CSVPanels(csvService, reportService, markService, refreshAll));
 
         if (currentUser.getRole() == User.Role.HOD) {
             tabbedPane.addTab("User Management", new UserPanel(userService, reportService));
